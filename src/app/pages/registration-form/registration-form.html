@@ -1,0 +1,218 @@
+<main class="page">
+  <header class="hero">
+    <h1>Iteen International Cup 2026</h1>
+    <p>Club and academy registration</p>
+  </header>
+
+  @if (result(); as reg) {
+    <mat-card appearance="outlined">
+      <mat-card-content>
+        @if (reg.status === 'approved') {
+          <h2>You're in!</h2>
+          <p>
+            <strong>{{ reg.clubName }}</strong> is confirmed for the tournament with
+            {{ resultTeamCount() }} team(s). We'll be in touch at {{ reg.contactEmail }}.
+          </p>
+        } @else {
+          <h2>Registration received</h2>
+          <p>
+            To confirm your place, please pay
+            <strong>{{ reg.amountDue | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+            ({{ resultTeamCount() }} team(s) × $100). We'll send payment details to
+            {{ reg.contactEmail }}.
+          </p>
+        }
+        <p class="muted">Reference number: #{{ reg.id }}</p>
+      </mat-card-content>
+      <mat-card-actions align="end">
+        <button mat-button (click)="reset()">Register another club</button>
+      </mat-card-actions>
+    </mat-card>
+  } @else {
+    <mat-card appearance="outlined">
+      <mat-stepper linear [orientation]="isSmall() ? 'vertical' : 'horizontal'">
+
+        <!-- Step 1: Club -->
+        <mat-step [stepControl]="clubForm" label="Club">
+          <form [formGroup]="clubForm" class="step">
+            <mat-form-field appearance="outline">
+              <mat-label>Club / academy name</mat-label>
+              <input matInput formControlName="clubName" autocomplete="organization" />
+              <mat-error>Enter the club name (2–100 characters)</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Country</mat-label>
+              <mat-select formControlName="country">
+                @for (country of countries; track country) {
+                  <mat-option [value]="country">{{ country }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Logo URL (optional)</mat-label>
+              <input matInput formControlName="logo" placeholder="https://..." />
+              <mat-error>Enter a link starting with http:// or https://</mat-error>
+            </mat-form-field>
+
+            <div class="row">
+              <mat-form-field appearance="outline">
+                <mat-label>Main kit colour</mat-label>
+                <input matInput formControlName="kitPrimary" placeholder="e.g. Blue" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Second kit colour</mat-label>
+                <input matInput formControlName="kitSecondary" placeholder="e.g. White" />
+              </mat-form-field>
+            </div>
+
+            <div class="actions">
+              <button mat-flat-button matStepperNext>Next</button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 2: Contact -->
+        <mat-step [stepControl]="contactForm" label="Contact">
+          <form [formGroup]="contactForm" class="step">
+            <mat-form-field appearance="outline">
+              <mat-label>Full name</mat-label>
+              <input matInput formControlName="contactName" autocomplete="name" />
+              <mat-error>Enter your name</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Role</mat-label>
+              <mat-select formControlName="contactRole">
+                @for (role of roles; track role) {
+                  <mat-option [value]="role">{{ role }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <div class="row">
+              <mat-form-field appearance="outline">
+                <mat-label>Email</mat-label>
+                <input matInput type="email" formControlName="contactEmail" autocomplete="email" />
+                <mat-error>Enter a valid email address</mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Phone / WhatsApp</mat-label>
+                <input matInput type="tel" formControlName="contactPhone" autocomplete="tel" />
+                <mat-hint>Include the country code, e.g. +250 788 123 456</mat-hint>
+                <mat-error>Enter a valid phone number</mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="actions">
+              <button mat-button type="button" matStepperPrevious>Back</button>
+              <button mat-flat-button matStepperNext>Next</button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 3: Teams -->
+        <mat-step [stepControl]="entries" label="Teams">
+          <div class="step">
+            <p>How many teams will you enter in each category?</p>
+
+            @if (loadError()) {
+              <p class="error">{{ loadError() }}</p>
+            }
+
+            <div class="team-grid">
+              @for (entry of entries.controls; track $index) {
+                <mat-form-field appearance="outline">
+                  <mat-label>
+                    {{ entry.controls.section.value }} {{ entry.controls.ageGroup.value }}
+                  </mat-label>
+                  <mat-select [formControl]="entry.controls.count">
+                    @for (n of teamOptions; track n) {
+                      <mat-option [value]="n">{{ n }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              }
+            </div>
+
+            <div class="fee">
+                @if (teamCount() === 0) {
+                    Select at least one team to continue.
+                } @else {
+                    {{ teamCount() }} team(s) selected.
+                    @if (!feeExempt()) {
+                        <dt>Fee</dt>
+                        <dd>{{ amountDue() | currency: 'USD' : 'symbol' : '1.0-0' }}, payable to confirm your place</dd>
+}
+                }
+            </div>
+
+            <div class="actions">
+              <button mat-button type="button" matStepperPrevious>Back</button>
+              <button mat-flat-button matStepperNext>Next</button>
+            </div>
+          </div>
+        </mat-step>
+
+        <!-- Step 4: Review -->
+        <mat-step label="Review">
+          <div class="step">
+            <dl class="summary">
+              <dt>Club</dt>
+              <dd>{{ clubForm.controls.clubName.value }} ({{ clubForm.controls.country.value }})</dd>
+
+              @if (clubForm.controls.kitPrimary.value) {
+                <dt>Kit</dt>
+                <dd>
+                  {{ clubForm.controls.kitPrimary.value }}
+                  @if (clubForm.controls.kitSecondary.value) {
+                    / {{ clubForm.controls.kitSecondary.value }}
+                  }
+                </dd>
+              }
+
+              <dt>Contact</dt>
+              <dd>
+                {{ contactForm.controls.contactName.value }} ({{ contactForm.controls.contactRole.value }})<br />
+                {{ contactForm.controls.contactEmail.value }} · {{ contactForm.controls.contactPhone.value }}
+              </dd>
+
+              <dt>Teams</dt>
+              <dd>
+                @for (e of selectedEntries(); track e.section + '-' + e.ageGroup) {
+                  <span class="chip">{{ e.section }} {{ e.ageGroup }} × {{ e.count }}</span>
+                }
+              </dd>
+
+              <dt>Fee</dt>
+              <dd>
+                @if (feeExempt()) {
+                  Free (Rwandan club)
+                } @else {
+                  {{ amountDue() | currency: 'USD' : 'symbol' : '1.0-0' }}, payable to confirm your place
+                }
+              </dd>
+            </dl>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Notes (optional)</mat-label>
+              <textarea matInput rows="3" [formControl]="notes"></textarea>
+            </mat-form-field>
+
+            @if (submitError()) {
+              <p class="error">{{ submitError() }}</p>
+            }
+
+            <div class="actions">
+              <button mat-button type="button" matStepperPrevious>Back</button>
+              <button mat-flat-button type="button" (click)="submit()" [disabled]="submitting()">
+                {{ submitting() ? 'Submitting…' : 'Submit registration' }}
+              </button>
+            </div>
+          </div>
+        </mat-step>
+      </mat-stepper>
+    </mat-card>
+  }
+</main>
